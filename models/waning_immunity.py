@@ -1,7 +1,7 @@
 # Author: Karen Guzman
 # Description: Simulating the SIR model of infectious disease with waning immunity. The waning immunity parameter is the rate at which recovered individuals lose immunity and become susceptible again.
 # Date: 6/18/2026
-# Credit: https://www.youtube.com/watch?v=cbXCyO_F2v8 
+# The basic SIR model implementation was adapted from the YouTube tutorial "SIR Epidemiology Model with Python" by Mike Saint-Antoine (2021), available at https://www.youtube.com/watch?v=cbXCyO_F2v8.
 
 from scipy import integrate
 import matplotlib.pyplot as plt
