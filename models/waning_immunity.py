@@ -23,8 +23,9 @@ def simulator(params, y0, t):
     return integrate.odeint(sim, y0, t, args=(params,))
 
 # plotting function
-def plot_simulation(t, y, beta, gamma):
+def plot_simulation(t, y, params):
     # plot the data
+    beta, gamma, omega = params
     R0 = beta / gamma
 
     #define figure with 3 subplots
@@ -38,6 +39,20 @@ def plot_simulation(t, y, beta, gamma):
     ax1.set_title('SIR Model with Waning Immunity')
     ax1.set_xlabel('Time')
     ax3.set_ylabel('Number of Individuals')
-    plt.legend()
-    print(f'R0: {R0:.2f}')
+    ax1.legend()
+    ax2.legend()
+    ax3.legend()
+    #add stats
+    N = y[0].sum()   # total population (conserved)
+
+    print(f"Peak number of infected: {y[:,1].max():.0f}")
+    print(f"Time to peak: {t[y[:,1].argmax()]:.1f}")
+    print(f"Basic reproduction number (R0): {R0:.2f}")
+    if omega > 0:
+        print(f"Endemic equilibrium (S): {N/R0:.1f}")
+        print(f"Endemic equilibrium (I): {(N - N/R0)/(1 + gamma/omega):.1f}")
+    else:
+        print("No waning (omega = 0): disease burns out.")
+        print(f"Final susceptibles remaining: {y[-1,0]:.0f}")
+        print(f"Final infected: {y[-1,1]:.1f}")
     plt.show()

@@ -1,0 +1,74 @@
+# Author: Karen Guzman
+# Description: Simulating the SIR model of infectious disease the new emergence of a variant. The parameter beta2 is the transmission of this new variant, which is assumed to be more transmissible than the first variant (beta2 > beta1). Full cross-immunity is assumed: recovering from either variant grants immunity to BOTH, so each individual is infected at most once.
+# Date: 6/19/2026
+
+# Difference from cross-infection (next model):
+# Here, we assume that having either variant makes you immune to both. The two variants compete for the same susceptible population. In the cross-infection model, individuals can be infected by the second variant after recovering from the first.
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import integrate
+
+#redefine our sim function
+def sim_new_emergence(variables, t, params):
+    S, I1, I2, R1, R2 = variables
+    beta1, beta2, gamma1, gamma2 = params
+
+    N = S + I1 + I2 + R1 + R2
+    # new emergence of a variant 
+    dSdt = -beta1 * S * I1 / N - beta2 * S * I2 / N
+    dI1dt = beta1 * S * I1 / N - gamma1 * I1
+    dI2dt = beta2 * S * I2 / N - gamma2 * I2
+    dR1dt = gamma1 * I1
+    dR2dt = gamma2 * I2
+
+    return ([dSdt, dI1dt, dI2dt, dR1dt, dR2dt])
+
+#generic integration function
+def simulator(params, y0, t):
+    return integrate.odeint(sim_new_emergence, y0, t, args=(params,))
+    #returns the number of people in each compartment at each time point in t
+
+#emergence: variant 1 alone until t_emerge, then variant 2 emerges
+def simulate_emergence(params, y0, t_emerge, t_total=300, n=1000, seed=1.0):
+    # returns (t, y) where t is the time vector and y is the solution of the ODEs
+    n1 = int(n * t_emerge / t_total)  # number of time points before emergence
+    n2 = n - n1  # number of time points after emergence
+
+    t1 = np.linspace(0, t_emerge, n1)
+    solution1 = simulator(params, y0, t1)
+    y_handoff = solution1[-1].copy()  #grabs last row of solution1, which is list of [S, I1, I2, R1, R2] at t_emerge
+    y_handoff[0] -= seed  # reduce susceptible population by seed amount
+    y_handoff[2] += seed  # increase infected population of variant 2 by seed amount
+
+    t2 = np.linspace(t_emerge, t_total, n2)
+    solution2 = simulator(params, y_handoff, t2)
+
+    return np.concatenate([t1, t2]), np.vstack([solution1, solution2]) # t is the time vector, y is the solution of the ODEs for all time points
+
+
+#plotting function
+def plot_emergence(t, y):
+    emerge_index = np.argmax(y[:,2] > 0)  # find the index where the second variant starts to emerge
+    t_emerge = t[emerge_index]  # get the corresponding time of emergence
+    
+    #plot
+    plt.figure(figsize=(10,6))
+    plt.plot(t, y[:,0], label='Susceptible')
+    plt.plot(t, y[:,1], label='Infected with Strain 1')
+    plt.plot(t, y[:,2], label='Infected with Strain 2')
+    plt.plot(t, y[:,3], label='Recovered from Strain 1')
+    plt.plot(t, y[:,4], label='Recovered from Strain 2')
+    plt.xlabel('Time')
+    plt.ylabel('Population')
+    plt.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of Strain 2')
+
+    plt.title('Emergence of a New Strain in an Epidemic')
+    plt.legend()
+    
+    #print statistics about the epidemic
+    print(f"Peak of Strain 1: {np.max(y[:,1])} at time {t[np.argmax(y[:,1])]}")
+    print(f"Peak of Strain 2: {np.max(y[:,2])} at time {t[np.argmax(y[:,2])]}")
+    print(f"Total infected with Strain 1: {y[-1,3]}")
+    print(f"Total infected with Strain 2: {y[-1,4]}")
+    plt.show()
