@@ -1,5 +1,5 @@
 # Author: Karen Guzman
-# Description: Simulating the SIR model of infectious disease the new emergence of a variant. The parameter beta2 is the transmission of this new variant, which is assumed to be more transmissible than the first variant (beta2 > beta1). Full cross-immunity is assumed: recovering from either variant grants immunity to BOTH, so each individual is infected at most once.
+# Description: Simulating the SIR model of an infectious disease with the new emergence of a variant. The parameter beta2 is the transmission of this new variant, which is assumed to be more transmissible than the first variant (beta2 > beta1). Full cross-immunity is assumed: recovering from either variant grants immunity to BOTH, so each individual is infected at most once.
 # Date: 6/19/2026
 
 # Difference from cross-infection (next model):
@@ -56,9 +56,10 @@ def plot_emergence(t, y):
     plt.figure(figsize=(10,6))
     plt.plot(t, y[:,0], label='Susceptible')
     plt.plot(t, y[:,1], label='Infected with Strain 1')
-    plt.plot(t, y[:,2], label='Infected with Strain 2')
     plt.plot(t, y[:,3], label='Recovered from Strain 1')
-    plt.plot(t, y[:,4], label='Recovered from Strain 2')
+    plt.plot(t[emerge_index:], y[emerge_index:,2], label='Infected with Strain 2')
+    plt.plot(t[emerge_index:], y[emerge_index:,4], label='Recovered from Strain 2')
+
     plt.xlabel('Time')
     plt.ylabel('Population')
     plt.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of Strain 2')
