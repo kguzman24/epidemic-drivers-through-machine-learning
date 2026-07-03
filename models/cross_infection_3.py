@@ -56,7 +56,7 @@ def plot_cross_infection(t, y, title=None, savepath=None):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
  
     ax1.plot(t, y[:, I1], color='tab:blue',   lw=2, label='I1 (infected, variant 1)')
-    ax1.plot(t, y[:, I2], color='tab:red',    lw=2, label='I2 (infected, variant 2)')
+    ax1.plot(t[emerge_index:], y[emerge_index:, I2], color='tab:red',    lw=2, label='I2 (infected, variant 2)')
     ax1.axvline(t_emerge, color='gray', ls='--', lw=1, label='Variant 2 emerges')
     ax1.set_ylabel('Infected')
     ax1.set_title(title or 'Epidemic curves')
@@ -65,8 +65,8 @@ def plot_cross_infection(t, y, title=None, savepath=None):
     ax2.plot(t, y[:, S],  color='black',       lw=2, label='S (never infected)')
     ax2.plot(t, y[:, R1], color='tab:blue',    ls='--', label='R1 (cross-protected, had v1)')
     ax2.plot(t, y[:, S1], color='tab:cyan',    label='S1 (waned, susceptible to v2)')
-    ax2.plot(t, y[:, R2], color='tab:red',     ls='--', label='R2 (cross-protected, had v2)')
-    ax2.plot(t, y[:, S2], color='tab:orange',  label='S2 (waned, susceptible to v1)')
+    ax2.plot(t[emerge_index:], y[emerge_index:, R2], color='tab:red',     ls='--', label='R2 (cross-protected, had v2)')
+    ax2.plot(t[emerge_index:], y[emerge_index:, S2], color='tab:orange',  label='S2 (waned, susceptible to v1)')
     ax2.axvline(t_emerge, color='gray', ls='--', lw=1)
     ax2.set_xlabel('Time')
     ax2.set_ylabel('Population')
@@ -81,5 +81,4 @@ def plot_cross_infection(t, y, title=None, savepath=None):
     fig.tight_layout()
     if savepath:
         fig.savefig(savepath, dpi=110, bbox_inches='tight')
-    return fig
  
