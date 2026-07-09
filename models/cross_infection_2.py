@@ -1,6 +1,7 @@
 # Author: Karen Guzman
 # Description: Two-variant SIR model with cross-infection, simplified to 5 compartments (S, I1, I2, R1, R2). Recovering from a variant moves you to that variant's R compartment, from which you can still catch the OTHER variant. This model does not track infection history. R1 mixes "variant 1 only" with "variant 2 then variant 1" people, so it cannot report infection-order statistics, and it permits the same variant to be caught twice. Individuals can cycle S->I2->R2->I1->R1->I2->... 
 # Use the 9-compartment version if order tracking / strict per-variant immunity is required.
+# This version introduces WANING IMMUNITY.
 # Date: 6/28/2026
  
 import numpy as np

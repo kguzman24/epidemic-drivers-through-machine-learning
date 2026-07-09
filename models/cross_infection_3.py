@@ -1,5 +1,6 @@
 # Author: Karen Guzman
 # Description: Two-variant SIR model with cross-infection, simplified to 7 compartments (S, I1, I2, R1, R2, S1, S2).
+# This version includes WANING IMMUNITY.
 # Date: 7/2/2026
 
 import numpy as np
@@ -16,7 +17,6 @@ def sim_cross_infection(variables, t, params):
  
     N = s + i1 + i2 + r1 + r2 + s1 + s2
  
-    # 
     dSdt  = -beta1 * s * i1 / N - beta2 * s * i2 / N          # S -> I1, S -> I2
     dI1dt =  beta1 * s * i1 / N + beta1 * s2 * i1 / N - gamma1 * i1  # (S->I1) + (S2->I1) - recovery
     dI2dt =  beta2 * s * i2 / N + beta2 * s1 * i2 / N - gamma2 * i2  # (S->I2) + (S1->I2) - recovery

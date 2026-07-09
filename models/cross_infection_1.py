@@ -1,5 +1,6 @@
 # Author: Karen Guzman
 # Description: Simulating the SIR model of an infectious disease with the possibility of cross-infection. Full cross-immunity is not assumed: recovering from the first variant does not grant immunity to the second variant, so individuals can be infected by the second variant after recovering from the first.
+# This version does not include WANING IMMUNITY.
 # Date: 6/26/2026
 
 # For the first version of the cross-infection model, we do not assume waning immunity. So an individual is immune to the first variant after recovering from it, but can still be infected by the second variant. In a future version, we will add waning immunity to the model.

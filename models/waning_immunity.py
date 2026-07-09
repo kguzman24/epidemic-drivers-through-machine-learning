@@ -5,6 +5,7 @@
 
 from scipy import integrate
 import matplotlib.pyplot as plt
+import os
 
 # define function
 def sim(variables, t, params):
@@ -23,7 +24,7 @@ def simulator(params, y0, t):
     return integrate.odeint(sim, y0, t, args=(params,))
 
 # plotting function
-def plot_simulation(t, y, params):
+def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
     # plot the data
     beta, gamma, omega = params
     R0 = beta / gamma
@@ -45,14 +46,35 @@ def plot_simulation(t, y, params):
     #add stats
     N = y[0].sum()   # total population (conserved)
 
-    print(f"Peak number of infected: {y[:,1].max():.0f}")
-    print(f"Time to peak: {t[y[:,1].argmax()]:.1f}")
-    print(f"Basic reproduction number (R0): {R0:.2f}")
+    stats_lines = [
+        f"Peak infected: {y[:,1].max():.0f}",
+        f"Time to peak: {t[y[:,1].argmax()]:.1f}",
+        f"R0: {R0:.2f}",
+    ]
+    
     if omega > 0:
-        print(f"Endemic equilibrium (S): {N/R0:.1f}")
-        print(f"Endemic equilibrium (I): {(N - N/R0)/(1 + gamma/omega):.1f}")
+        S_eq = N/R0
+        I_eq = (N - N/R0)/(1 + gamma/omega)
+        stats_lines.append(f"Endemic equilibrium (S): {S_eq:.1f}")
+        stats_lines.append(f"Endemic equilibrium (I): {I_eq:.1f}")
     else:
-        print("No waning (omega = 0): disease burns out.")
-        print(f"Final susceptibles remaining: {y[-1,0]:.0f}")
-        print(f"Final infected: {y[-1,1]:.1f}")
+
+        stats_lines.append("No waning (omega = 0): disease burns out.")
+        stats_lines.append(f"Final susceptibles remaining: {y[-1,0]:.0f}")
+        stats_lines.append(f"Final infected: {y[-1,1]:.1f}")
+
+    stats_text = "\n".join(stats_lines)
+    print(stats_text)
+
+    #leave room on right for stats
+    f.subplots_adjust(right=0.75)
+    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
+    # save image
+    os.makedirs(figures_dir, exist_ok= True)
+    if filename is None:
+        filename = f"waning_omega_{omega:.3f}.png"
+    filepath = os.path.join(figures_dir, filename)
+    f.savefig(filepath)
+    print(f"Figure saved to {filepath}")
     plt.show()
