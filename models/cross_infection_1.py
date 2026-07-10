@@ -8,6 +8,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
+import os
 
 #redefine our sim function
 def sim_cross_infection(variables, t, params):
@@ -55,13 +56,22 @@ def simulate_cross_infection(params, y0, t_emerge, t_total=300, n=1000, seed=1.0
     return np.concatenate([t1, t2]), np.vstack([solution1, solution2]) # t is the time vector, y is the solution of the ODEs for all time points in the form: [S, I1, I2, R1, R2, I12, I21, R12, R21]
 
 #plotting function
-def plot_cross_infection(t, y):
+def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     S, I1, I2, R1, R2, I12, I21, R12, R21 = range(9)  # indices for the compartments
+    beta1, beta2, gamma1, gamma2 = params
     emerge_index = np.argmax(y[:,2] > 0)  # find the index where the second variant starts to emerge
     t_emerge = t[emerge_index]  # get the corresponding time of emergence
-    
+
+    # R0
+    R0_1 = beta1 / gamma1
+    R0_2 = beta2 / gamma2 #beta2 /gamma2 is variant 2's R0 in a fully susceptible population, but the effective R0 will be different because variant 2 can infect S and R1
+    N = y[0].sum()  # total population (conserved)
+    s_emerge = y[emerge_index,S]  # susceptible population at the time of emergence
+    r1_emerge = y[emerge_index,R1]  #recovered from variant 1 only at the time of emergence
+    effective_R0_2 = R0_2 * (s_emerge + r1_emerge) / N  # effective R0 of variant 2 at the start of its emergence; S/N + R1/N
+
     #plot
-    plt.figure(figsize=(10,6))
+    f = plt.figure(figsize=(10,6))
     plt.plot(t, y[:,S], label='Susceptible') #[:, S]
     plt.plot(t, y[:,I1], label='Infected, variant 1 only') #[:, I1]
     plt.plot(t, y[:,R1], label='Recovered, variant 1 only') #[:, R1]
@@ -79,28 +89,41 @@ def plot_cross_infection(t, y):
 
     plt.title('Emergence of a New Variant with Cross-Infection')
     plt.legend()
-    
-    #print statistics about the epidemic
-    print(f"Peak of variant 1 (I1+I21): {np.max(y[:, I1] + y[:, I21]):.1f} "
-          f"at time {t[np.argmax(y[:, I1] + y[:, I21])]:.1f}")
-    print(f"Peak of variant 2 (I2+I12): {np.max(y[:, I2] + y[:, I12]):.1f} "
-          f"at time {t[np.argmax(y[:, I2] + y[:, I12])]:.1f}")
-    #print numbers for all scenarios: 
-    # 1. individuals do not become infected by either variant
-    # 2. individuals become infected by the first variant but not the second
-    # 3. individuals become infected by the second variant but not the first
-    # 3. individuals are first infected with variant 1, then 2
-    # 4. individuals are first infected with variant 2, then 1
+
     final = y[-1]
-    print("\nScenarios at the end of the simulation: ")
-    print(f"1. Never infected by either variant: {final[S]:.1f}")
-    print(f"2. Infected by variant 1 only:        {final[R1]:.1f}")
-    print(f"3. Infected by variant 2 only:        {final[R2]:.1f}")
-    print(f"4. First variant 1, then variant 2:   {final[R12]:.1f}")
-    print(f"5. First variant 2, then variant 1:   {final[R21]:.1f}")
+    peak1 = (y[:, I1] + y[:, I21]).max(); tpeak1 = t[(y[:, I1] + y[:, I21]).argmax()]
+    peak2 = (y[:, I2] + y[:, I12]).max(); tpeak2 = t[(y[:, I2] + y[:, I12]).argmax()]
+
+    stats_lines = [
+        f"R0 of variant 1: {R0_1:.2f}",
+        f"R0 of variant 2: {R0_2:.2f}",
+        f"R0 of variant 2 at emergence: {effective_R0_2:.2f}",
+        f"Peak of variant 1 (I1+I21): {peak1:.1f} at t={tpeak1:.1f}",
+        f"Peak of variant 2 (I2+I12): {peak2:.1f} at t={tpeak2:.1f}\n",
+        f"Never infected: {final[S]:.0f}",
+        f"Infected by variant 1 only: {final[R1]:.0f}",
+        f"Infected by variant 2 only: {final[R2]:.0f}",
+        f"First variant 1, then variant 2: {final[R12]:.0f}",
+        f"First variant 2, then variant 1: {final[R21]:.0f}",
+        f"Total: {final.sum():.0f}",
+    ]
+
+    stats_text = "\n".join(stats_lines)
+    print(stats_text)
+
     still = final[I1] + final[I2] + final[I12] + final[I21]
     if still > 1e-3:
-        print(f"   (still infected at end of run:    {still:.1f} - extend t_total)")
-    print(f"   total accounted for: {final.sum():.1f}")
- 
+        print(f"(still infected at end of run: {still:.1f} - should extend t_total)")
+    
+    #leave room on right for stats
+    f.subplots_adjust(right=0.75)
+    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', family='monospace', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
+    # save image
+    os.makedirs(figures_dir, exist_ok= True)
+    if filename is None:
+        filename = f"cross_inf1_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
+    filepath = os.path.join(figures_dir, filename)
+    f.savefig(filepath)
+    print(f"Figure saved to {filepath}")
     plt.show()
