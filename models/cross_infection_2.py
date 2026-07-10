@@ -7,6 +7,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
+import os
  
 # index map
 S, I1, I2, R1, R2 = range(5)
@@ -34,9 +35,10 @@ def simulator(params, y0, t):
  
 def simulate_cross_infection(params, y0, t_emerge, t_total=300, n=1000, seed=1.0):
     #Variant 1 circulates alone until t_emerge, then variant 2 is seeded by moving `seed` people from S into I2
-    n1 = int(n * t_emerge / t_total)
-    n2 = n - n1
+    n1 = int(n * t_emerge / t_total) # number of time points before emergence
+    n2 = n - n1  # number of time points after emergence
  
+    #variant 1 circulates alone until t_emerge, then 'seed' people is from from S into I2
     t1 = np.linspace(0, t_emerge, n1)
     solution1 = simulator(params, y0, t1)
  
@@ -50,11 +52,23 @@ def simulate_cross_infection(params, y0, t_emerge, t_total=300, n=1000, seed=1.0
     return np.concatenate([t1, t2]), np.vstack([solution1, solution2])
  
  
-def plot_cross_infection(t, y):
-    emerge_index = np.argmax(y[:, I2] > 0)
-    t_emerge = t[emerge_index]
- 
-    plt.figure(figsize=(10, 6))
+def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
+    S, I1, I2, R1, R2 = range(5) # indices for the compartments
+    beta1, beta2, gamma1, gamma2 = params
+    emerge_index = np.argmax(y[:, I2] > 0) # find the index where the second variant starts to emerge
+    t_emerge = t[emerge_index] # get the corresponding time of emergence
+    N = y[0].sum()  # total population
+
+    #R0
+    R0_1 = beta1 / gamma1
+    R0_2 = beta2 / gamma2
+
+    s_emerge = y[emerge_index, S]
+    r1_emerge = y[emerge_index, R1]
+    effective_R0_2 =  R0_2 * (s_emerge + r1_emerge) / N #variant 2 can infect S and R1
+
+    #plot 
+    f = plt.figure(figsize=(10,6))
     plt.plot(t, y[:, S],  label='Susceptible')
     plt.plot(t, y[:, I1], label='Infected, variant 1')
     plt.plot(t, y[:, R1], label='Recovered, variant 1')
@@ -66,12 +80,43 @@ def plot_cross_infection(t, y):
     plt.ylabel('Population')
     plt.title('Emergence of a New Variant with Cross-Infection (5-compartment)')
     plt.legend()
- 
-    print(f"Peak of variant 1: {np.max(y[:, I1]):.1f} at time {t[np.argmax(y[:, I1])]:.1f}")
-    print(f"Peak of variant 2: {np.max(y[:, I2]):.1f} at time {t[np.argmax(y[:, I2])]:.1f}")
-    print(f"Never infected by either variant (final S): {y[-1, S]:.1f}")
-    print(f"Total population (conservation check): {y[-1].sum():.1f}")
- 
+
+    #stats
+
+    final = y[-1]
+    peak1 = (y[:, I1]).max(); tpeak1 = t[(y[:, I1]).argmax()]
+    peak2 = (y[:, I2]).max(); tpeak2 = t[(y[:, I2]).argmax()]
+
+    stats_lines = [
+        f"R0 of variant 1: {R0_1:.2f}",
+        f"R0 of variant 2: {R0_2:.2f}",
+        f"R0 of variant 2 at emergence: {effective_R0_2:.2f}",
+        f"Peak of variant 1: {peak1:.1f} at t={tpeak1:.1f}",
+        f"Peak of variant 2: {peak2:.1f} at t={tpeak2:.1f}\n",
+        f"Never infected: {final[S]:.0f}",
+        f"Infected by variant 1 only: {final[R1]:.0f}",
+        f"Infected by variant 2 only: {final[R2]:.0f}",
+        f"Total: {final.sum():.0f}",
+    ]
+
+    stats_text = "\n".join(stats_lines)
+    print(stats_text)
+
+    still = final[I1] + final[I2]
+    if still > 1e-3:
+        print(f"(Still infected at end of run: {still:.1f} - should extend t_total)")
+    
+    #leave room on right for stats
+    f.subplots_adjust(right=0.75)
+    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', family='monospace', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
+    # save image
+    os.makedirs(figures_dir, exist_ok= True)
+    if filename is None:
+        filename = f"cross_inf1_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
+    filepath = os.path.join(figures_dir, filename)
+    f.savefig(filepath)
+    print(f"Figure saved to {filepath}")
     plt.show()
  
  

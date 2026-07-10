@@ -113,7 +113,7 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
 
     still = final[I1] + final[I2] + final[I12] + final[I21]
     if still > 1e-3:
-        print(f"(still infected at end of run: {still:.1f} - should extend t_total)")
+        print(f"(Still infected at end of run: {still:.1f} - should extend t_total)")
     
     #leave room on right for stats
     f.subplots_adjust(right=0.75)
