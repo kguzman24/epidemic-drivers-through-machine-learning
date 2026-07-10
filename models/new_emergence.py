@@ -8,6 +8,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
+import os
 
 #redefine our sim function
 def sim_new_emergence(variables, t, params):
@@ -48,12 +49,21 @@ def simulate_emergence(params, y0, t_emerge, t_total=300, n=1000, seed=1.0):
 
 
 #plotting function
-def plot_emergence(t, y):
+def plot_emergence(t, y, params, filename = None, figures_dir="figures"):
+    beta1, beta2, gamma1, gamma2 = params
+
     emerge_index = np.argmax(y[:,2] > 0)  # find the index where the second variant starts to emerge
     t_emerge = t[emerge_index]  # get the corresponding time of emergence
+
+    #calculate R0 for both variants and effective R0 for variant 2 at the time of emergence
+    R0_1 = beta1 / gamma1
+    R0_2 = beta2 / gamma2 #beta2 /gamma2 is variant 2's R0 in a fully susceptible population, but the effective R0 will be lower because some people are already immune to both variants
+    s_emerge = y[emerge_index,0]  # susceptible population at the time of emergence
+    N = y[0].sum()  # total population (conserved)
+    effective_R0_2 = R0_2 * (s_emerge / N)  # effective R0 of variant 2 at the start of its emergence; S/N
     
     #plot
-    plt.figure(figsize=(10,6))
+    f = plt.figure(figsize=(10,6))
     plt.plot(t, y[:,0], label='Susceptible')
     plt.plot(t, y[:,1], label='Infected with Strain 1')
     plt.plot(t, y[:,3], label='Recovered from Strain 1')
@@ -66,10 +76,31 @@ def plot_emergence(t, y):
 
     plt.title('Emergence of a New Strain in an Epidemic')
     plt.legend()
+
+    stats_lines = [
+        f"R0 (variant 1): {R0_1:.2f}",
+        f"R0 (variant 2): {R0_2:.2f}",
+        f"Effective R0 (variant 2 at emergence): {effective_R0_2:.2f}",
+        f"Peak of Strain 1: {y[:,1].max():.0f} at t={t[y[:,1].argmax()]:.1f}",
+        f"Peak of Strain 2: {y[:,2].max():.0f} at t={t[y[:,2].argmax()]:.1f}",
+        f"Total infected with Strain 1: {y[-1,3]:.0f}",
+        f"Total infected with Strain 2: {y[-1,4]:.0f}",
+        f"Never infected (final S): {y[-1,0]:.0f}"
+    ]
     
-    #print statistics about the epidemic
-    print(f"Peak of Strain 1: {np.max(y[:,1])} at time {t[np.argmax(y[:,1])]}")
-    print(f"Peak of Strain 2: {np.max(y[:,2])} at time {t[np.argmax(y[:,2])]}")
-    print(f"Total infected with Strain 1: {y[-1,3]}")
-    print(f"Total infected with Strain 2: {y[-1,4]}")
+    stats_text = "\n".join(stats_lines)
+    print(stats_text)
+
+    
+    #leave room on right for stats
+    f.subplots_adjust(right=0.75)
+    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
+    # save image
+    os.makedirs(figures_dir, exist_ok= True)
+    if filename is None:
+        filename = f"new_emergence_b2_{beta2:.3f}.png"
+    filepath = os.path.join(figures_dir, filename)
+    f.savefig(filepath)
+    print(f"Figure saved to {filepath}")
     plt.show()

@@ -52,16 +52,19 @@ def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
         f"R0: {R0:.2f}",
     ]
     
-    if omega > 0:
+    if omega > 0 and R0 > 1: #added condition R0 > 1 to avoid division by zero when calculating endemic equilibrium
         S_eq = N/R0
         I_eq = (N - N/R0)/(1 + gamma/omega)
         stats_lines.append(f"Endemic equilibrium (S): {S_eq:.1f}")
         stats_lines.append(f"Endemic equilibrium (I): {I_eq:.1f}")
+    elif omega>0: #if R0 <= 1, the disease will die out and there will be no endemic equilibrium
+        stats_lines.append(f"R0<1:disease dies out despite waning.")
+        stats_lines.append(f"Final infected: {y[-1,1]:.1f}")
     else:
-
-        stats_lines.append("No waning (omega = 0): disease burns out.")
+        stats_lines.append(f"No waning (omega = 0): disease burns out.")
         stats_lines.append(f"Final susceptibles remaining: {y[-1,0]:.0f}")
         stats_lines.append(f"Final infected: {y[-1,1]:.1f}")
+
 
     stats_text = "\n".join(stats_lines)
     print(stats_text)
