@@ -6,6 +6,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
+import os
 
 # index map
 S, I1, I2, R1, R2, S1, S2 = range(7)
@@ -18,12 +19,12 @@ def sim_cross_infection(variables, t, params):
     N = s + i1 + i2 + r1 + r2 + s1 + s2
  
     dSdt  = -beta1 * s * i1 / N - beta2 * s * i2 / N          # S -> I1, S -> I2
-    dI1dt =  beta1 * s * i1 / N + beta1 * s2 * i1 / N - gamma1 * i1  # (S->I1) + (S2->I1) - recovery
-    dI2dt =  beta2 * s * i2 / N + beta2 * s1 * i2 / N - gamma2 * i2  # (S->I2) + (S1->I2) - recovery
-    dR1dt =  gamma1 * i1 - omega * r1 # recovery -> S1
-    dR2dt =  gamma2 * i2 - omega * r2 # recovery -> S2
-    dS1dt =  omega * r1 - beta2 * s1 * i2 / N # S1 -> I2
-    dS2dt =  omega * r2 - beta1 * s2 * i1 / N # S2 -> I1
+    dI1dt =  beta1 * s * i1 / N + beta1 * s2 * i1 / N + beta1 * s1 * i1 / N + beta1 * r2 * i1 / N - gamma1 * i1  # (S->I1) + (S2->I1) + (S1->I1) + (R2->I1) - recovery
+    dI2dt =  beta2 * s * i2 / N + beta2 * s1 * i2 / N + beta2 * s2 * i2 / N + beta2 * r1 * i2 / N - gamma2 * i2  # (S->I2) + (S1->I2) + (S2->I2) + (R1->I2) - recovery
+    dR1dt =  gamma1 * i1 - omega * r1 - beta2 * r1 * i2 / N # recovery -> S1, recovery ->I2
+    dR2dt =  gamma2 * i2 - omega * r2 - beta1 * r2 * i1 / N # recovery -> S2, recovery ->I1
+    dS1dt =  omega * r1 - beta2 * s1 * i2 / N - beta1 * s1 * i1 / N # S1 -> I2, S1->I1
+    dS2dt =  omega * r2 - beta1 * s2 * i1 / N - beta2 * s2 * i2 / N # S2 -> I1, S2->I2
  
     return [dSdt, dI1dt, dI2dt, dR1dt, dR2dt, dS1dt, dS2dt]
  
@@ -49,17 +50,31 @@ def simulate_cross_infection(params, y0, t_emerge, t_total=300, n=1000, seed=1.0
     return np.concatenate([t1, t2]), np.vstack([solution1, solution2])
  
  
-def plot_cross_infection(t, y, title=None, savepath=None):
+def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
+    S, I1, I2, R1, R2, S1, S2 = range(7) # indices for the compartments
+    beta1, beta2, gamma1, gamma2, omega = params
     emerge_index = np.argmax(y[:, I2] > 0)
     t_emerge = t[emerge_index]
- 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
+    N = y[0].sum()  # total population
+
+    #R0
+    R0_1 = beta1 / gamma1
+    R0_2 = beta2 / gamma2
+
+    s_emerge = y[emerge_index, S]
+    s1_emerge = y[emerge_index, S1]
+    s2_emerge = y[emerge_index, S2]
+    r1_emerge = y[emerge_index, R1]
+    effective_R0_2 = R0_2 * (s_emerge + s2_emerge + r1_emerge + s1_emerge)/ N #variant 2 can infect S, S1, S2, and R1
+
+    #plot 
+    f, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
  
     ax1.plot(t, y[:, I1], color='tab:blue',   lw=2, label='I1 (infected, variant 1)')
     ax1.plot(t[emerge_index:], y[emerge_index:, I2], color='tab:red',    lw=2, label='I2 (infected, variant 2)')
     ax1.axvline(t_emerge, color='gray', ls='--', lw=1, label='Variant 2 emerges')
     ax1.set_ylabel('Infected')
-    ax1.set_title(title or 'Epidemic curves')
+    ax1.set_title('Epidemic curves')
     ax1.legend(loc='upper right', fontsize=9)
  
     ax2.plot(t, y[:, S],  color='black',       lw=2, label='S (never infected)')
@@ -72,13 +87,39 @@ def plot_cross_infection(t, y, title=None, savepath=None):
     ax2.set_ylabel('Population')
     ax2.legend(loc='upper right', fontsize=9)
  
+
+    #stats
+
+    final = y[-1]
+    peak1 = (y[:, I1]).max(); tpeak1 = t[(y[:, I1]).argmax()]
+    peak2 = (y[:, I2]).max(); tpeak2 = t[(y[:, I2]).argmax()]
+
+    stats_lines = [
+        f"R0 of variant 1: {R0_1:.2f}",
+        f"R0 of variant 2: {R0_2:.2f}",
+        f"R0 of variant 2 at emergence: {effective_R0_2:.2f}",
+        f"Peak of variant 1: {peak1:.1f} at t={tpeak1:.1f}",
+        f"Peak of variant 2: {peak2:.1f} at t={tpeak2:.1f}\n",
+        f"Never infected: {final[S]:.0f}",
+    ]
+    stats_text = "\n".join(stats_lines)
+    print(stats_text)
+
+    still = final[I1] + final[I2]
+    if still > 1e-3:
+        print(f"(Still infected at end of run: {still:.1f} - should extend t_total)")
     
-    print(f"[{title}]")
-    print(f"  Variant 1 peak: {y[:, I1].max():7.1f} at t={t[np.argmax(y[:, I1])]:.1f}")
-    print(f"  Variant 2 peak: {y[:, I2].max():7.1f} at t={t[np.argmax(y[:, I2])]:.1f}")
-    print(f"  Never infected at end (S): {y[-1, S]:.1f}")
+    #leave room on right for stats
+    f.subplots_adjust(right=0.75)
+    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', family='monospace', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
+    # save image
+    os.makedirs(figures_dir, exist_ok= True)
+    if filename is None:
+        filename = f"cross_inf_3_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
+    filepath = os.path.join(figures_dir, filename)
+    f.savefig(filepath)
+    print(f"Figure saved to {filepath}")
+    plt.show()
  
-    fig.tight_layout()
-    if savepath:
-        fig.savefig(savepath, dpi=110, bbox_inches='tight')
  

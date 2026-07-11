@@ -94,8 +94,8 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
         f"Peak of variant 1: {peak1:.1f} at t={tpeak1:.1f}",
         f"Peak of variant 2: {peak2:.1f} at t={tpeak2:.1f}\n",
         f"Never infected: {final[S]:.0f}",
-        f"Infected by variant 1 only: {final[R1]:.0f}",
-        f"Infected by variant 2 only: {final[R2]:.0f}",
+        f"Infected by variant 1: {final[R1]:.0f}",
+        f"Infected by variant 2: {final[R2]:.0f}",
         f"Total: {final.sum():.0f}",
     ]
 
@@ -113,7 +113,7 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     # save image
     os.makedirs(figures_dir, exist_ok= True)
     if filename is None:
-        filename = f"cross_inf1_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
+        filename = f"cross_inf_2_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
     filepath = os.path.join(figures_dir, filename)
     f.savefig(filepath)
     print(f"Figure saved to {filepath}")
