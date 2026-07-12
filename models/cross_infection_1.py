@@ -1,9 +1,9 @@
 # Author: Karen Guzman
-# Description: Simulating the SIR model of an infectious disease with the possibility of cross-infection. Full cross-immunity is not assumed: recovering from the first variant does not grant immunity to the second variant, so individuals can be infected by the second variant after recovering from the first.
-# This version does not include WANING IMMUNITY.
+# Description: Simulating the SIR model of an infectious disease with cross-infection and potential cross-immunity. Recovering from one variant grants immunity to that variant and reduced susceptibility to the other, controlled by cross-immunity factors eta12 and eta21.  η₁₂, η₂₁ ∈ [0,1] and  η = 1 means there is no cross-protection. η = 0 means full cross protection. This version does not include WANING IMMUNITY.
 # Date: 6/26/2026
 
 # For the first version of the cross-infection model, we do not assume waning immunity. So an individual is immune to the first variant after recovering from it, but can still be infected by the second variant. In a future version, we will add waning immunity to the model.
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ import os
 def sim_cross_infection(variables, t, params):
     S, I1, I2, R1, R2, I12, I21, R12, R21 = variables
     #the variables will have final states that mimic 5 scenarios: S = never infected, I1 = variant 1 only, I2 = variant 2 only, R1 = recovered from variant 1 only, R2 = recovered from variant 2 only, I12 = had variant 1-then-2, I21 = had variant 2-then-1, R12 = recovered from variant 1-then-2, R21 = recovered from variant 2-then-1
-    beta1, beta2, gamma1, gamma2 = params
+    beta1, beta2, gamma1, gamma2, eta12, eta21 = params
 
     N = S + I1 + I2 + R1 + R2 + I12 + I21 + R12 + R21  #total population
 
@@ -22,10 +22,10 @@ def sim_cross_infection(variables, t, params):
     dSdt = -beta1 * S * (I1 + I21) / N - beta2 * S * (I2 + I12) / N
     dI1dt = beta1 * S * (I1 + I21 )/ N - gamma1 * I1 #infected with variant 1 only
     dI2dt = beta2 * S * (I2 + I12) / N - gamma2 * I2  #infected with variant 2 only
-    dR1dt = gamma1 * I1 - beta2 * R1 * (I2 + I12) / N  #recovered from variant 1 only minus those who have been infected by the second variant
-    dR2dt = gamma2 * I2 - beta1 * R2 * (I1 + I21) / N  #recovered from variant 2 only minus those who have been infected by the first variant
-    dI12dt = beta2 * R1 * (I2 + I12) / N - gamma2 * I12  #R2 people catching variant 1
-    dI21dt = beta1 * R2 * (I1 + I21) / N - gamma1 * I21 #R1 people catching variant 2
+    dR1dt = gamma1 * I1 - eta12 * beta2 * R1 * (I2 + I12) / N  #recovered from variant 1 only minus those who have been infected by the second variant
+    dR2dt = gamma2 * I2 - eta21 * beta1 * R2 * (I1 + I21) / N  #recovered from variant 2 only minus those who have been infected by the first variant
+    dI12dt = eta12 * beta2 * R1 * (I2 + I12) / N - gamma2 * I12  #R2 people catching variant 1
+    dI21dt = eta21 * beta1 * R2 * (I1 + I21) / N - gamma1 * I21 #R1 people catching variant 2
     dR12dt = gamma2 * I12 #recovered from both, variant 1 first
     dR21dt = gamma1 * I21 #recovered from both, variant 2 first
 
@@ -58,7 +58,7 @@ def simulate_cross_infection(params, y0, t_emerge, t_total=300, n=1000, seed=1.0
 #plotting function
 def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     S, I1, I2, R1, R2, I12, I21, R12, R21 = range(9)  # indices for the compartments
-    beta1, beta2, gamma1, gamma2 = params
+    beta1, beta2, gamma1, gamma2, eta12, eta21 = params
     emerge_index = np.argmax(y[:,2] > 0)  # find the index where the second variant starts to emerge
     t_emerge = t[emerge_index]  # get the corresponding time of emergence
 
@@ -124,6 +124,6 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     if filename is None:
         filename = f"cross_inf1_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
     filepath = os.path.join(figures_dir, filename)
-    f.savefig(filepath)
+    f.savefig(filepath, bbox_inches='tight')
     print(f"Figure saved to {filepath}")
     plt.show()

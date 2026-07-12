@@ -1,7 +1,7 @@
 # Author: Karen Guzman
 # Description: Two-variant SIR model with cross-infection, simplified to 5 compartments (S, I1, I2, R1, R2). Recovering from a variant moves you to that variant's R compartment, from which you can still catch the OTHER variant. This model does not track infection history. R1 mixes "variant 1 only" with "variant 2 then variant 1" people, so it cannot report infection-order statistics, and it permits the same variant to be caught twice. Individuals can cycle S->I2->R2->I1->R1->I2->... 
 # Use the 9-compartment version if order tracking / strict per-variant immunity is required.
-# This version introduces WANING IMMUNITY.
+
 # Date: 6/28/2026
  
 import numpy as np
@@ -15,16 +15,16 @@ S, I1, I2, R1, R2 = range(5)
  
 def sim_cross_infection(variables, t, params):
     s, i1, i2, r1, r2 = variables
-    beta1, beta2, gamma1, gamma2 = params
+    beta1, beta2, gamma1, gamma2, eta12, eta21 = params
  
     N = s + i1 + i2 + r1 + r2
  
     # variant 1 spread only by I1, variant 2 spread only by I2
     dSdt  = -beta1 * s * i1 / N - beta2 * s * i2 / N          # S -> I1, S -> I2
-    dI1dt =  beta1 * s * i1 / N + beta1 * r2 * i1 / N - gamma1 * i1  # (S->I1) + (R2->I1) - recovery
-    dI2dt =  beta2 * s * i2 / N + beta2 * r1 * i2 / N - gamma2 * i2  # (S->I2) + (R1->I2) - recovery
-    dR1dt =  gamma1 * i1 - beta2 * r1 * i2 / N               # I1->R1, minus R1->I2 (cross)
-    dR2dt =  gamma2 * i2 - beta1 * r2 * i1 / N               # I2->R2, minus R2->I1 (cross)
+    dI1dt =  beta1 * s * i1 / N + eta21 * beta1 * r2 * i1 / N - gamma1 * i1  # (S->I1) + (R2->I1) scaled - recovery
+    dI2dt =  beta2 * s * i2 / N + eta12 * beta2 * r1 * i2 / N - gamma2 * i2  # (S->I2) + (R1->I2) scaled - recovery
+    dR1dt =  gamma1 * i1 - eta12 * beta2 * r1 * i2 / N               # I1->R1, minus R1->I2 (cross), matches dI2 term
+    dR2dt =  gamma2 * i2 - eta21 *beta1 * r2 * i1 / N               # I2->R2, minus R2->I1 (cross), matches dI1 term
  
     return [dSdt, dI1dt, dI2dt, dR1dt, dR2dt]
  
@@ -54,7 +54,7 @@ def simulate_cross_infection(params, y0, t_emerge, t_total=300, n=1000, seed=1.0
  
 def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     S, I1, I2, R1, R2 = range(5) # indices for the compartments
-    beta1, beta2, gamma1, gamma2 = params
+    beta1, beta2, gamma1, gamma2, eta12, eta21 = params
     emerge_index = np.argmax(y[:, I2] > 0) # find the index where the second variant starts to emerge
     t_emerge = t[emerge_index] # get the corresponding time of emergence
     N = y[0].sum()  # total population
@@ -65,7 +65,7 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
 
     s_emerge = y[emerge_index, S]
     r1_emerge = y[emerge_index, R1]
-    effective_R0_2 =  R0_2 * (s_emerge + r1_emerge) / N #variant 2 can infect S and R1
+    effective_R0_2 =  R0_2 * (s_emerge + eta12 * r1_emerge) / N #variant 2 can infect S and R1
 
     #plot 
     f = plt.figure(figsize=(10,6))
@@ -115,7 +115,7 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     if filename is None:
         filename = f"cross_inf_2_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
     filepath = os.path.join(figures_dir, filename)
-    f.savefig(filepath)
+    f.savefig(filepath, bbox_inches='tight')
     print(f"Figure saved to {filepath}")
     plt.show()
  

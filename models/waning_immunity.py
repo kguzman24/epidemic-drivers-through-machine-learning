@@ -78,6 +78,6 @@ def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
     if filename is None:
         filename = f"waning_omega_{omega:.3f}.png"
     filepath = os.path.join(figures_dir, filename)
-    f.savefig(filepath)
+    f.savefig(filepath, bbox_inches='tight')
     print(f"Figure saved to {filepath}")
     plt.show()

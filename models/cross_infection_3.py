@@ -118,7 +118,7 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     if filename is None:
         filename = f"cross_inf_3_b1_{beta1:.2f}_b2_{beta2:.2f}.png"
     filepath = os.path.join(figures_dir, filename)
-    f.savefig(filepath)
+    f.savefig(filepath, bbox_inches='tight')
     print(f"Figure saved to {filepath}")
     plt.show()
  
