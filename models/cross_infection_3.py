@@ -68,7 +68,7 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     effective_R0_2 = R0_2 * (s_emerge + s2_emerge + r1_emerge + s1_emerge)/ N #variant 2 can infect S, S1, S2, and R1
 
     #plot 
-    f, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 8), sharex=True)
+    f, (ax1, ax2, ax_text) = plt.subplots(3, 1, figsize=(11, 8), sharex=True)
  
     ax1.plot(t, y[:, I1], color='tab:blue',   lw=2, label='I1 (infected, variant 1)')
     ax1.plot(t[emerge_index:], y[emerge_index:, I2], color='tab:red',    lw=2, label='I2 (infected, variant 2)')
@@ -109,10 +109,10 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     if still > 1e-3:
         print(f"(Still infected at end of run: {still:.1f} - should extend t_total)")
     
-    #leave room on right for stats
-    f.subplots_adjust(right=0.75)
-    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', family='monospace', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
-
+    ax_text.axis('off')
+    ax_text.text(0.5, 0.5, stats_text, fontsize=12, ha='center', va='center',
+                transform=ax_text.transAxes,
+                bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
     # save image
     os.makedirs(figures_dir, exist_ok= True)
     if filename is None:

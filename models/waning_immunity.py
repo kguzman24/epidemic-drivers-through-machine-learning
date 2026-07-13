@@ -29,9 +29,12 @@ def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
     beta, gamma, omega = params
     R0 = beta / gamma
 
-    #define figure with 3 subplots
-    f, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8))
-
+    #define figure with 4 subplots
+    #4 rows: S, I, R, and a text panel that gets less height
+    f, (ax1, ax2, ax3, ax_text) = plt.subplots(
+        4, 1, figsize=(8, 9),
+        gridspec_kw={'height_ratios': [3, 3, 3, 1]}
+    )
 
     line1 = ax1.plot(t, y[:, 0], 'b', label='Susceptible') #0 column with all rows
     line2 = ax2.plot(t, y[:, 1], 'r', label='Infected')
@@ -68,10 +71,12 @@ def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
 
     stats_text = "\n".join(stats_lines)
     print(stats_text)
-
-    #leave room on right for stats
+    
     f.subplots_adjust(right=0.75)
-    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+    ax_text.axis('off')
+    ax_text.text(0.5, 00, stats_text, fontsize=10, ha='center', va='center',
+                 bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
 
     # save image
     os.makedirs(figures_dir, exist_ok= True)

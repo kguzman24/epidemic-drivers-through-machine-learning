@@ -68,18 +68,18 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     effective_R0_2 =  R0_2 * (s_emerge + eta12 * r1_emerge) / N #variant 2 can infect S and R1
 
     #plot 
-    f = plt.figure(figsize=(10,6))
-    plt.plot(t, y[:, S],  label='Susceptible')
-    plt.plot(t, y[:, I1], label='Infected, variant 1')
-    plt.plot(t, y[:, R1], label='Recovered, variant 1')
-    plt.plot(t[emerge_index:], y[emerge_index:, I2], label='Infected, variant 2')
-    plt.plot(t[emerge_index:], y[emerge_index:, R2], label='Recovered, variant 2')
-    plt.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of variant 2')
+    f, (ax_plot, ax_text) = plt.subplots(2, 1, figsize=(10, 6), gridspec_kw={'height_ratios': [4, 1]})
+    ax_plot.plot(t, y[:, S],  label='Susceptible')
+    ax_plot.plot(t, y[:, I1], label='Infected, variant 1')
+    ax_plot.plot(t, y[:, R1], label='Recovered, variant 1')
+    ax_plot.plot(t[emerge_index:], y[emerge_index:, I2], label='Infected, variant 2')
+    ax_plot.plot(t[emerge_index:], y[emerge_index:, R2], label='Recovered, variant 2')
+    ax_plot.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of variant 2')
  
-    plt.xlabel('Time')
-    plt.ylabel('Population')
-    plt.title('Emergence of a New Variant with Cross-Infection (5-compartment)')
-    plt.legend()
+    ax_plot.set_xlabel('Time')
+    ax_plot.set_ylabel('Population')
+    ax_plot.set_title('Emergence of a New Variant with Cross-Infection (5-compartment)')
+    ax_plot.legend()
 
     #stats
 
@@ -106,9 +106,12 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     if still > 1e-3:
         print(f"(Still infected at end of run: {still:.1f} - should extend t_total)")
     
-    #leave room on right for stats
+    
     f.subplots_adjust(right=0.75)
-    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', family='monospace', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+    ax_text.axis('off')
+    ax_text.text(0.5, -.1, stats_text, fontsize=10, ha='center', va='center',
+                 bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
 
     # save image
     os.makedirs(figures_dir, exist_ok= True)

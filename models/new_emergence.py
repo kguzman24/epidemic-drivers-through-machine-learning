@@ -63,19 +63,23 @@ def plot_emergence(t, y, params, filename = None, figures_dir="figures"):
     effective_R0_2 = R0_2 * (s_emerge / N)  # effective R0 of variant 2 at the start of its emergence; S/N
     
     #plot
-    f = plt.figure(figsize=(10,6))
-    plt.plot(t, y[:,0], label='Susceptible')
-    plt.plot(t, y[:,1], label='Infected with Strain 1')
-    plt.plot(t, y[:,3], label='Recovered from Strain 1')
-    plt.plot(t[emerge_index:], y[emerge_index:,2], label='Infected with Strain 2')
-    plt.plot(t[emerge_index:], y[emerge_index:,4], label='Recovered from Strain 2')
+    # figure with 2 rows: plot on top, stats strip below
+    f, (ax_plot, ax_text) = plt.subplots(
+        2, 1, figsize=(10, 7),
+        gridspec_kw={'height_ratios': [4, 1]}
+    )
+    ax_plot.plot(t, y[:,0], label='Susceptible')
+    ax_plot.plot(t, y[:,1], label='Infected with Strain 1')
+    ax_plot.plot(t, y[:,3], label='Recovered from Strain 1')
+    ax_plot.plot(t[emerge_index:], y[emerge_index:,2], label='Infected with Strain 2')
+    ax_plot.plot(t[emerge_index:], y[emerge_index:,4], label='Recovered from Strain 2')
 
-    plt.xlabel('Time')
-    plt.ylabel('Population')
-    plt.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of Strain 2')
+    ax_plot.set_xlabel('Time')
+    ax_plot.set_ylabel('Population')
+    ax_plot.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of Strain 2')
 
-    plt.title('Emergence of a New Strain in an Epidemic')
-    plt.legend()
+    ax_plot.set_title('Emergence of a New Strain in an Epidemic')
+    ax_plot.legend()
 
     stats_lines = [
         f"R0 (variant 1): {R0_1:.2f}",
@@ -92,9 +96,11 @@ def plot_emergence(t, y, params, filename = None, figures_dir="figures"):
     print(stats_text)
 
     
-    #leave room on right for stats
+    
     f.subplots_adjust(right=0.75)
-    f.text(0.78, 0.5, stats_text, fontsize=10, va='center', bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+    ax_text.axis('off')
+    ax_text.text(0.5, .3, stats_text, fontsize=10, ha='center', va='center',
+                 bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
 
     # save image
     os.makedirs(figures_dir, exist_ok= True)
