@@ -31,17 +31,28 @@ def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
 
     #define figure with 4 subplots
     #4 rows: S, I, R, and a text panel that gets less height
-    f, (ax1, ax2, ax3, ax_text) = plt.subplots(
-        4, 1, figsize=(8, 9),
-        gridspec_kw={'height_ratios': [3, 3, 3, 1]}
-    )
+    f = plt.figure(figsize=(9, 10))
+    gs = f. add_gridspec(4,2, height_ratios = [3, 3, 3, 1.5], width_ratios=[1, 1])
+    ax1 = f.add_subplot(gs[0, :])
+    ax2 = f.add_subplot(gs[1, :])
+    ax3 = f.add_subplot(gs[2, :])
+    ax_text = f.add_subplot(gs[3, 0])
+    ax_flags = f.add_subplot(gs[3, 1])
 
     line1 = ax1.plot(t, y[:, 0], 'b', label='Susceptible') #0 column with all rows
     line2 = ax2.plot(t, y[:, 1], 'r', label='Infected')
     line3 = ax3.plot(t, y[:, 2], 'g', label='Recovered')
-
-    ax1.set_title('SIR Model with Waning Immunity')
+    if omega == 0:
+        ax1.set_title('SIR Model without Waning Immunity')
+    else:
+        ax1.set_title('SIR Model with Waning Immunity')
     ax1.set_xlabel('Time')
+    ax1.set_ylabel('Number of Individuals')
+
+    ax2.set_xlabel('Time')
+    ax2.set_ylabel('Number of Individuals')
+
+    ax3.set_xlabel('Time')
     ax3.set_ylabel('Number of Individuals')
     ax1.legend()
     ax2.legend()
@@ -50,16 +61,29 @@ def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
     N = y[0].sum()   # total population (conserved)
 
     stats_lines = [
-        f"Peak infected: {y[:,1].max():.0f}",
+        f"Prevalence Peak Size: {y[:,1].max():.0f}",
         f"Time to peak: {t[y[:,1].argmax()]:.1f}",
         f"R0: {R0:.2f}",
     ]
+    flags_lines = [
+    f"Waning immunity: {'Yes' if omega > 0 else 'No'}",
+    f"Cross infection: No",
+    f"Multiple infection (same variant): {'Yes' if omega > 0 else 'No'}",
+]
     
     if omega > 0 and R0 > 1: #added condition R0 > 1 to avoid division by zero when calculating endemic equilibrium
         S_eq = N/R0
         I_eq = (N - N/R0)/(1 + gamma/omega)
+        R_eq = N - S_eq - I_eq
+        ax1.axhline(S_eq, color='gray', linestyle='--', label=f'Endemic Eq. S')
+        ax1.legend()
+        ax2.axhline(I_eq, color='gray', linestyle='--', label=f'Endemic Eq. I')
+        ax2.legend()
+        ax3.axhline(R_eq, color='gray', linestyle='--', label=f'Endemic Eq. R')
+        ax3.legend()
         stats_lines.append(f"Endemic equilibrium (S): {S_eq:.1f}")
         stats_lines.append(f"Endemic equilibrium (I): {I_eq:.1f}")
+        stats_lines.append(f"Endemic equilibrium (R): {R_eq:.1f}")
     elif omega>0: #if R0 <= 1, the disease will die out and there will be no endemic equilibrium
         stats_lines.append(f"R0<1:disease dies out despite waning.")
         stats_lines.append(f"Final infected: {y[-1,1]:.1f}")
@@ -72,10 +96,16 @@ def plot_simulation(t, y, params, filename = None, figures_dir="figures"):
     stats_text = "\n".join(stats_lines)
     print(stats_text)
     
-    f.subplots_adjust(right=0.75)
+    f.subplots_adjust(right=0.75, hspace=0.6, wspace=0.3)
     ax_text.axis('off')
-    ax_text.text(0.5, 00, stats_text, fontsize=10, ha='center', va='center',
+    ax_text.text(0.5, 0.5, stats_text, fontsize=11, ha='center', va='center',
                  bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+    
+    flags_text = "\n".join(flags_lines)
+
+    ax_flags.axis('off')
+    ax_flags.text(0.5, 0.5, flags_text, fontsize=11, ha='center', va='center',
+                bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
 
 
     # save image

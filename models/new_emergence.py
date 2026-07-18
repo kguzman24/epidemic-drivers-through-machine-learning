@@ -61,37 +61,43 @@ def plot_emergence(t, y, params, filename = None, figures_dir="figures"):
     s_emerge = y[emerge_index,0]  # susceptible population at the time of emergence
     N = y[0].sum()  # total population (conserved)
     effective_R0_2 = R0_2 * (s_emerge / N)  # effective R0 of variant 2 at the start of its emergence; S/N
-    
-    #plot
-    # figure with 2 rows: plot on top, stats strip below
-    f, (ax_plot, ax_text) = plt.subplots(
-        2, 1, figsize=(10, 7),
-        gridspec_kw={'height_ratios': [4, 1]}
-    )
+
+    f = plt.figure(figsize=(9, 10))
+    gs = f.add_gridspec(2, 2, height_ratios=[4, 1.5], width_ratios=[1, 1])
+    ax_plot = f.add_subplot(gs[0, :])
+    ax_text = f.add_subplot(gs[1, 0])
+    ax_flags = f.add_subplot(gs[1, 1])
+  
     ax_plot.plot(t, y[:,0], label='Susceptible')
-    ax_plot.plot(t, y[:,1], label='Infected with Strain 1')
-    ax_plot.plot(t, y[:,3], label='Recovered from Strain 1')
-    ax_plot.plot(t[emerge_index:], y[emerge_index:,2], label='Infected with Strain 2')
-    ax_plot.plot(t[emerge_index:], y[emerge_index:,4], label='Recovered from Strain 2')
+    ax_plot.plot(t, y[:,1], label='Infected with Variant 1')
+    ax_plot.plot(t, y[:,3], label='Recovered from Variant 1')
+    ax_plot.plot(t[emerge_index:], y[emerge_index:,2], label='Infected with Variant 2')
+    ax_plot.plot(t[emerge_index:], y[emerge_index:,4], label='Recovered from Variant 2')
 
     ax_plot.set_xlabel('Time')
     ax_plot.set_ylabel('Population')
-    ax_plot.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of Strain 2')
+    ax_plot.axvline(x=t_emerge, color='r', linestyle='--', label='Emergence of Variant 2')
 
-    ax_plot.set_title('Emergence of a New Strain in an Epidemic')
+    ax_plot.set_title('Emergence of a New Variant in an Epidemic')
     ax_plot.legend()
 
     stats_lines = [
         f"R0 (variant 1): {R0_1:.2f}",
         f"R0 (variant 2): {R0_2:.2f}",
         f"Effective R0 (variant 2 at emergence): {effective_R0_2:.2f}",
-        f"Peak of Strain 1: {y[:,1].max():.0f} at t={t[y[:,1].argmax()]:.1f}",
-        f"Peak of Strain 2: {y[:,2].max():.0f} at t={t[y[:,2].argmax()]:.1f}",
-        f"Total infected with Strain 1: {y[-1,3]:.0f}",
-        f"Total infected with Strain 2: {y[-1,4]:.0f}",
+        f"Prevalence Peak Size (Variant 1): {y[:,1].max():.0f} at t={t[y[:,1].argmax()]:.1f}",
+        f"Prevalence Peak Size (Variant 2): {y[:,2].max():.0f} at t={t[y[:,2].argmax()]:.1f}",
+        f"Total infected with Variant 1: {y[-1,3]:.0f}",
+        f"Total infected with Variant 2: {y[-1,4]:.0f}",
         f"Never infected (final S): {y[-1,0]:.0f}"
     ]
     
+    flags_lines = [
+        f"Waning immunity: No",
+        f"Cross infection: No",
+        f"Multiple infection (same variant): No",
+    ]
+        
     stats_text = "\n".join(stats_lines)
     print(stats_text)
 
@@ -99,8 +105,15 @@ def plot_emergence(t, y, params, filename = None, figures_dir="figures"):
     
     f.subplots_adjust(right=0.75)
     ax_text.axis('off')
-    ax_text.text(0.5, .3, stats_text, fontsize=10, ha='center', va='center',
+    ax_text.text(0.5, .7, stats_text, fontsize=10, ha='center', va='center',
                  bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
+    flags_text = "\n".join(flags_lines)
+
+    ax_flags.axis('off')
+    ax_flags.text(0.5, .7, flags_text, fontsize=10, ha='center', va='center',
+                bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
 
     # save image
     os.makedirs(figures_dir, exist_ok= True)

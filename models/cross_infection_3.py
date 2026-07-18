@@ -68,7 +68,12 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     effective_R0_2 = R0_2 * (s_emerge + s2_emerge + r1_emerge + s1_emerge)/ N #variant 2 can infect S, S1, S2, and R1
 
     #plot 
-    f, (ax1, ax2, ax_text) = plt.subplots(3, 1, figsize=(11, 8), sharex=True)
+    f = plt.figure(figsize=(9, 10))
+    gs = f.add_gridspec(3, 2, height_ratios=[4, 4, 1.5], width_ratios=[1, 1])
+    ax1 = f.add_subplot(gs[0, :])
+    ax2 = f.add_subplot(gs[1, :])
+    ax_text = f.add_subplot(gs[2, 0])
+    ax_flags = f.add_subplot(gs[2, 1])
  
     ax1.plot(t, y[:, I1], color='tab:blue',   lw=2, label='I1 (infected, variant 1)')
     ax1.plot(t[emerge_index:], y[emerge_index:, I2], color='tab:red',    lw=2, label='I2 (infected, variant 2)')
@@ -98,10 +103,25 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
         f"R0 of variant 1: {R0_1:.2f}",
         f"R0 of variant 2: {R0_2:.2f}",
         f"R0 of variant 2 at emergence: {effective_R0_2:.2f}",
-        f"Peak of variant 1: {peak1:.1f} at t={tpeak1:.1f}",
-        f"Peak of variant 2: {peak2:.1f} at t={tpeak2:.1f}\n",
+        f"Prevalence Peak V1: {peak1:.1f} at t={tpeak1:.1f}",
+        f"Prevalence Peak V2: {peak2:.1f} at t={tpeak2:.1f}\n",
         f"Never infected: {final[S]:.0f}",
     ]
+
+    #checking if the reinfection term was ever meaningfully non zero
+    reinfection_flow = beta1 * y[:, S1] * y[:, I1] / N
+    reinfection_occured = reinfection_flow.max() > 1e-3
+
+    allowed = omega > 0
+    shown = reinfection_occured and allowed
+    
+    flags_lines = [
+        f"Waning immunity: {'Yes' if omega > 0 else 'No'}",
+        f"Cross infection: Yes",
+        f"Multiple infection allowed in model: {'Yes'}",
+        f"Multiple infection shown (same variant): {'Yes' if shown else 'No'}",
+    ]
+
     stats_text = "\n".join(stats_lines)
     print(stats_text)
 
@@ -110,9 +130,15 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
         print(f"(Still infected at end of run: {still:.1f} - should extend t_total)")
     
     ax_text.axis('off')
-    ax_text.text(0.5, 0.5, stats_text, fontsize=12, ha='center', va='center',
+    ax_text.text(0.5, 0.2, stats_text, fontsize=12, ha='center', va='center',
                 transform=ax_text.transAxes,
                 bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
+    flags_text = "\n".join(flags_lines)
+    ax_flags.axis('off')
+    ax_flags.text(0.4, .4, flags_text, fontsize=10, ha='center', va='center',
+                  bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
+
     # save image
     os.makedirs(figures_dir, exist_ok= True)
     if filename is None:

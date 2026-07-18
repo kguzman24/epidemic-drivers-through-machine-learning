@@ -1,0 +1,1 @@
+# Generate synthetic epidemic curves from the 7 compartment simulator for training a nueral network classifier

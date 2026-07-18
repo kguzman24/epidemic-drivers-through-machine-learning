@@ -68,7 +68,12 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     effective_R0_2 =  R0_2 * (s_emerge + eta12 * r1_emerge) / N #variant 2 can infect S and R1
 
     #plot 
-    f, (ax_plot, ax_text) = plt.subplots(2, 1, figsize=(10, 6), gridspec_kw={'height_ratios': [4, 1]})
+    f = plt.figure(figsize=(9, 10))
+    gs = f.add_gridspec(2, 2, height_ratios=[4, 1.5], width_ratios=[1, 1])
+    ax_plot = f.add_subplot(gs[0, :])
+    ax_text = f.add_subplot(gs[1, 0])
+    ax_flags = f.add_subplot(gs[1, 1])
+
     ax_plot.plot(t, y[:, S],  label='Susceptible')
     ax_plot.plot(t, y[:, I1], label='Infected, variant 1')
     ax_plot.plot(t, y[:, R1], label='Recovered, variant 1')
@@ -91,12 +96,18 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
         f"R0 of variant 1: {R0_1:.2f}",
         f"R0 of variant 2: {R0_2:.2f}",
         f"R0 of variant 2 at emergence: {effective_R0_2:.2f}",
-        f"Peak of variant 1: {peak1:.1f} at t={tpeak1:.1f}",
-        f"Peak of variant 2: {peak2:.1f} at t={tpeak2:.1f}\n",
+        f"Prevalence Peak V1: {peak1:.1f} at t={tpeak1:.1f}",
+        f"Prevalence Peak V2: {peak2:.1f} at t={tpeak2:.1f}\n",
         f"Never infected: {final[S]:.0f}",
         f"Infected by variant 1: {final[R1]:.0f}",
         f"Infected by variant 2: {final[R2]:.0f}",
         f"Total: {final.sum():.0f}",
+    ]
+
+    flags_lines = [
+        f"Waning immunity: No",
+        f"Cross infection: Yes",
+        f"Multiple infection (same variant): Yes",
     ]
 
     stats_text = "\n".join(stats_lines)
@@ -109,9 +120,13 @@ def plot_cross_infection(t, y, params, filename = None, figures_dir="figures"):
     
     f.subplots_adjust(right=0.75)
     ax_text.axis('off')
-    ax_text.text(0.5, -.1, stats_text, fontsize=10, ha='center', va='center',
+    ax_text.text(0.5, .7, stats_text, fontsize=10, ha='center', va='center',
                  bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
 
+    flags_text = "\n".join(flags_lines)
+    ax_flags.axis('off')
+    ax_flags.text(0.4, .7, flags_text, fontsize=10, ha='center', va='center',
+                  bbox=dict(boxstyle='round', facecolor='whitesmoke', edgecolor='gray'))
 
     # save image
     os.makedirs(figures_dir, exist_ok= True)
